@@ -11,6 +11,10 @@ public class SystemConstants {
     public static final String REDIS_CACHE_USER= "user:";
 
     public static final String REDIS_CACHE_TOKEN = "token:";
+
+    public static final String REDIS_CACHE_SHOP = "shop:";
+
+    public static final String REDS_CACHE_SHOP_TYPE = "shopType:";
     public static final int CODE_TIMEOUT = 60;
 
     public static final int USER_TIMEOUT = 60;
