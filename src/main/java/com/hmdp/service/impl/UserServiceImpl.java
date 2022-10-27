@@ -75,10 +75,10 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
         Map<String, Object> userMap = BeanUtil.beanToMap(userDTO);
         String token = RandomUtil.randomString(12);
 
-        redisTemplate.opsForHash().putAll(SystemConstants.REDIS_CACHE_USER+token+":",userMap);
-        redisTemplate.expire(SystemConstants.REDIS_CACHE_USER+token+":",SystemConstants.USER_TIMEOUT,TimeUnit.MINUTES);
+        redisTemplate.opsForHash().putAll(SystemConstants.REDIS_CACHE_USER+token,userMap);
+        redisTemplate.expire(SystemConstants.REDIS_CACHE_USER+token,SystemConstants.USER_TIMEOUT,TimeUnit.MINUTES);
 
-        return Result.ok(userDTO);
+        return Result.ok(token);
     }
 
 
