@@ -36,13 +36,14 @@ public class ShopTypeServiceImpl extends ServiceImpl<ShopTypeMapper, ShopType> i
     private RedisTemplate redisTemplate;
     @Override
     public Result getTypeList() {
-        List shopList = redisTemplate.opsForList().range(SystemConstants.REDS_CACHE_SHOP_TYPE, 0, -1);
+        List<ShopType> shopList = redisTemplate.opsForList().range(SystemConstants.REDIS_CACHE_SHOP_TYPE, 0, -1);
+        System.out.println(shopList);
         if (!CollectionUtils.isEmpty(shopList)){
-
             return Result.ok(shopList);
         }
         List<ShopType> list = query().orderByAsc("sort").list();
-        redisTemplate.opsForList().rightPushAll(SystemConstants.REDS_CACHE_SHOP_TYPE,list);
+        System.out.println(list);
+        redisTemplate.opsForList().rightPushAll(SystemConstants.REDIS_CACHE_SHOP_TYPE,list);
         return Result.ok(list);
     }
 }
