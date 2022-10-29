@@ -7,6 +7,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
 import javax.annotation.Resource;
+import java.util.concurrent.TimeUnit;
 
 @SpringBootTest
 class HmDianPingApplicationTests {
@@ -16,7 +17,7 @@ class HmDianPingApplicationTests {
 
     @Test
      void test(){
-        shop.setLogicExpireTimeToRedis(1L,20L);
+        shop.setLogicExpireTimeToRedis(1L,10L, TimeUnit.SECONDS);
     }
 
 

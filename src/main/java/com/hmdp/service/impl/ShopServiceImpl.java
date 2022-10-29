@@ -8,6 +8,7 @@ import com.hmdp.entity.Shop;
 import com.hmdp.mapper.ShopMapper;
 import com.hmdp.service.IShopService;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.hmdp.utils.CacheClient;
 import com.hmdp.utils.SystemConstants;
 import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.ObjectUtils;
@@ -19,6 +20,7 @@ import org.springframework.stereotype.Service;
 import javax.annotation.Resource;
 import java.time.LocalDateTime;
 import java.util.concurrent.*;
+import java.util.function.Function;
 
 import static com.hmdp.utils.SystemConstants.*;
 
@@ -35,7 +37,8 @@ public class ShopServiceImpl extends ServiceImpl<ShopMapper, Shop> implements IS
 
     @Resource
     private RedisTemplate redisTemplate;
-
+    @Resource
+    private CacheClient cacheClient;
 
     @Override
     public Result getShopById(Long id) {
@@ -56,18 +59,12 @@ public class ShopServiceImpl extends ServiceImpl<ShopMapper, Shop> implements IS
      * @param id
      * @return
      */
-    public Shop getShopInfoThroughCache(Long id) throws InterruptedException {
-        Object o = redisTemplate.opsForValue().get(REDIS_CACHE_SHOP + id);
-        if (ObjectUtils.isNotEmpty(o)){
-            Shop cacheShop = (Shop) o;
-            return cacheShop;
-        }
-        if (o != null){
-            //说明对象走了缓存空值
-            return null;
-        }
+    public Shop getShopInfoThroughCache(Long id)  {
+        return  cacheClient.getInfoThroughCache(REDIS_CACHE_SHOP, id, aLong -> {
+            Shop shop = query().eq("id", id).one();
+            return shop;
+        },20L,TimeUnit.SECONDS);
 
-        return getShop(id);
     }
 
 
@@ -108,44 +105,18 @@ public class ShopServiceImpl extends ServiceImpl<ShopMapper, Shop> implements IS
         redisTemplate.opsForValue().set(REDIS_CACHE_SHOP+id,shop,30L, TimeUnit.MINUTES);
         return shop;
     }
-    private static final ExecutorService threadPool = Executors.newFixedThreadPool(10);
- //   ThreadPoolExecutor threadPoolExecutor = new ThreadPoolExecutor(10,10,200L,TimeUnit.SECONDS,new ArrayBlockingQueue<>(10));
     //逻辑过期处理
-    public Shop getShopInfoLogicExpired(Long id) {
-        Object o = redisTemplate.opsForValue().get(REDIS_CACHE_LOGICAL_SHOP + id);
-        if (ObjectUtils.isEmpty(o)){
-            return null;
-        }
+    public Shop getShopInfoLogicExpired(Long id)  {
+        return cacheClient.getInfoLogicExpired(REDIS_CACHE_LOGICAL_SHOP, id, ids -> query().eq("id", id).one(),
+                20L, TimeUnit.SECONDS);
 
-        RedisData redisData = (RedisData) o;
-        //如果还未过期,直接返回
-        if (redisData.getExpireTime().isAfter(LocalDateTime.now())){
-            return (Shop) redisData.getData();
-        }
-        //过期，使用互斥锁，另起一个线程，异步重置缓存
-        try {
-            boolean isLock = getLock(REDIS_CACHE_SHOP_KEY + id);
-            if (!isLock){
-                Thread.sleep(50);
-                return getShopInfoLogicExpired(id);
-            }
-            threadPool.submit(()->{
-                System.out.println(Thread.currentThread()+":线程池异步刷新");
-                setLogicExpireTimeToRedis(id,30L);
-            });
-            return (Shop) redisData.getData();
-        } catch (InterruptedException e) {
-            throw new RuntimeException(e);
-        } finally {
-            unlock(REDIS_CACHE_SHOP_KEY+id);
-        }
     }
 
-    public void setLogicExpireTimeToRedis(Long id,Long expireTime){
+    public void setLogicExpireTimeToRedis(Long id,Long expireTime,TimeUnit timeUnit){
         Shop shop = query().eq("id", id).one();
         RedisData redisData = new RedisData();
         redisData.setData(shop);
-        redisData.setExpireTime(LocalDateTime.now().plusSeconds(expireTime));
+        redisData.setExpireTime(LocalDateTime.now().plusSeconds(timeUnit.toSeconds(expireTime)));
         redisTemplate.opsForValue().set(REDIS_CACHE_LOGICAL_SHOP+id,redisData);
     }
 
