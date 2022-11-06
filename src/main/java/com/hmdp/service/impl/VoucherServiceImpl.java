@@ -7,11 +7,18 @@ import com.hmdp.mapper.VoucherMapper;
 import com.hmdp.entity.SeckillVoucher;
 import com.hmdp.service.ISeckillVoucherService;
 import com.hmdp.service.IVoucherService;
+import org.springframework.core.io.ClassPathResource;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.script.DefaultRedisScript;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.CollectionUtils;
 
 import javax.annotation.Resource;
+import java.util.Collections;
 import java.util.List;
+
+import static com.hmdp.utils.SystemConstants.REDIS_SHOP_SECKILL_VOUCHER;
 
 /**
  * <p>
@@ -26,7 +33,15 @@ public class VoucherServiceImpl extends ServiceImpl<VoucherMapper, Voucher> impl
 
     @Resource
     private ISeckillVoucherService seckillVoucherService;
+    @Resource
+    private RedisTemplate redisTemplate;
 
+    private static final DefaultRedisScript StockScript;
+    static {
+        StockScript = new DefaultRedisScript<>();
+        StockScript.setLocation(new ClassPathResource("addStock.lua"));
+        StockScript.setResultType(Long.class);
+    }
     @Override
     public Result queryVoucherOfShop(Long shopId) {
         // 查询优惠券信息
@@ -47,5 +62,8 @@ public class VoucherServiceImpl extends ServiceImpl<VoucherMapper, Voucher> impl
         seckillVoucher.setBeginTime(voucher.getBeginTime());
         seckillVoucher.setEndTime(voucher.getEndTime());
         seckillVoucherService.save(seckillVoucher);
+     //   redisTemplate.opsForValue().set(REDIS_SHOP_SECKILL_VOUCHER+voucher.getId(),voucher.getStock());
+        redisTemplate.execute(StockScript, Collections.emptyList(),voucher.getId(),100);
+
     }
 }

@@ -19,6 +19,11 @@ public class SystemConstants {
     public static final String REDIS_CACHE_SHOP_KEY = "shopKey:";
 
     public static final String REDIS_CACHE_LOGICAL_SHOP = "logical:shop";
+
+    public static final String REDIS_SHOP_SECKILL_VOUCHER = "seckillVoucher:";
+
+    public static final String REDIS_SHOP_SECKILL_USER = "seckillVoucher:user:" ;
+
     public static final int CODE_TIMEOUT = 60;
 
     public static final int USER_TIMEOUT = 60;

@@ -42,7 +42,7 @@ public class ShopServiceImpl extends ServiceImpl<ShopMapper, Shop> implements IS
 
     @Override
     public Result getShopById(Long id) {
-        Shop shop = getShopInfoLogicExpired(id);
+        Shop shop = getShopInfoThroughCache(id);
         if (shop == null){
             return Result.fail("店铺不存在");
         }

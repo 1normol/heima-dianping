@@ -67,7 +67,6 @@ public class UserController {
     public Result me(){
         UserDTO user = UserHolder.getUser();
         return Result.ok(user);
-        // TODO 获取当前登录的用户并返回
     }
 
     @GetMapping("/info/{id}")
